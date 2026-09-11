@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0"
+         xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <ItemDefinitionGroup>
+
+    <ClCompile>
+      <AdditionalIncludeDirectories>
+        $(OPENCV_DIR)\include;
+        %(AdditionalIncludeDirectories)
+      </AdditionalIncludeDirectories>
+    </ClCompile>
+
+    <Link>
+      <AdditionalLibraryDirectories>
+        $(OPENCV_DIR)\x64\vc15\lib;
+        %(AdditionalLibraryDirectories)
+      </AdditionalLibraryDirectories>
+
+      <AdditionalDependencies Condition="'$(Configuration)'=='Debug'">
+        opencv_world345d.lib;
+        %(AdditionalDependencies)
+      </AdditionalDependencies>
+
+      <AdditionalDependencies Condition="'$(Configuration)'=='Release'">
+        opencv_world345.lib;
+        %(AdditionalDependencies)
+      </AdditionalDependencies>
+
+    </Link>
+
+  </ItemDefinitionGroup>
+
+</Project>
