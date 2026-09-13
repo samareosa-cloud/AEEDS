@@ -1,60 +1,82 @@
-﻿#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
+#include <opencv2/opencv.hpp>
 #include <iostream>
 
 using namespace cv;
 using namespace std;
 
-int main()
+void imageResize(Mat input, float scale)
 {
-    // 이미지 읽기
-    Mat img = imread("C:/Users/sinbc/test.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+    int x, y;
+    int height, width;
+    int re_height, re_width;
+    int sx, sy;
+    float pos_x, pos_y;
 
-    float scale = 2.2;
+    height = input.rows;
+    width = input.cols;
 
-    int newWidth = (int)(img.cols * scale);
-    int newHeight = (int)(img.rows * scale);
+    re_height = scale * (float)height;
+    re_width = scale * (float)width;
 
-    Mat result(newHeight, newWidth, CV_8UC1);
+    // 컬러 이미지이므로 3채널
+    Mat result(re_height, re_width, CV_8UC3);
 
-    for (int y = 0; y < newHeight; y++)
-    {
-        for (int x = 0; x < newWidth; x++)
-        {
-            float srcX = x * (1.0f / scale);
-            float srcY = y * (1.0f / scale);
+    for (y = 0; y < re_height; y++) {
+        for (x = 0; x < re_width; x++) {
 
-            int x1 = (int)srcX;
-            int y1 = (int)srcY;
+            // Backward Mapping
+            pos_x = (1.0 / scale) * x;
+            pos_y = (1.0 / scale) * y;
 
-            int x2 = x1 + 1;
-            int y2 = y1 + 1;
+            sx = (int)pos_x;
+            sy = (int)pos_y;
 
-            // out of boundary
-            if (x2 >= img.cols)
-                x2 = img.cols - 1;
+            // 이미지 범위 확인
+            if (sx >= 0 && sx < width - 1 &&
+                sy >= 0 && sy < height - 1)
+            {
+                // 주변 4개 컬러 픽셀
+                Vec3b p1 = input.at<Vec3b>(sy, sx);
+                Vec3b p2 = input.at<Vec3b>(sy, sx + 1);
+                Vec3b p3 = input.at<Vec3b>(sy + 1, sx);
+                Vec3b p4 = input.at<Vec3b>(sy + 1, sx + 1);
 
-            if (y2 >= img.rows)
-                y2 = img.rows - 1;
-
-            float dx = srcX - x1;
-            float dy = srcY - y1;
-
-            float p1 = img.at<uchar>(y1, x1);
-            float p2 = img.at<uchar>(y1, x2);
-            float p3 = img.at<uchar>(y2, x1);
-            float p4 = img.at<uchar>(y2, x2);
-
-            float value = (p1 + p2 + p3 + p4) / 4.0f; //4개평균낸거임 다른 수식 있음
-
-            result.at<uchar>(y, x) = (uchar)value;
+                // B, G, R 각각 평균
+                for (int c = 0; c < 3; c++) {
+                    result.at<Vec3b>(y, x)[c] =
+                        (uchar)(0.25 * (
+                            p1[c] +
+                            p2[c] +
+                            p3[c] +
+                            p4[c]
+                            ));
+                }
+            }
         }
     }
 
-    imshow("Original", img);
-    imshow("Result", result);
+    // 결과 화면 출력
+    imshow("Original Image", input);
+    imshow("Resize Result", result);
+
+    // 결과 저장
+    imwrite("C:/Users/sinbc/resizeResult.bmp", result);
 
     waitKey(0);
+}
+
+int main()
+{
+    // 컬러 이미지로 읽기
+    Mat img = imread("C:/Users/sinbc/test.jpg", IMREAD_COLOR);
+
+    if (img.empty()) {
+        cout << "Image load failed!" << endl;
+        return -1;
+    }
+
+    // 0.7배로 resizing
+    imageResize(img, 0.7f);
 
     return 0;
 }
