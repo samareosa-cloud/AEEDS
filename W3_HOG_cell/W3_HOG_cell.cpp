@@ -1,4 +1,4 @@
-﻿#include <opencv2/opencv.hpp>
+#include <opencv2/opencv.hpp>
 #include <cmath>
 #include <cstdio>
 #include <vector>
@@ -305,6 +305,46 @@ static HogResult extractHogWithCell(
     return result;
 }
 
+// 세 이미지의 최종 9-bin histogram을 CSV로 저장
+static void saveFinalHistogram(
+    const vector<float>& refHist,
+    const vector<float>& c1Hist,
+    const vector<float>& c2Hist,
+    int nbins,
+    const char* csvPath)
+{
+    int i;       // Histogram bin 번호
+    FILE* fp;    // CSV 파일 포인터
+
+    fp = NULL;
+    fopen_s(&fp, csvPath, "w");
+
+    if (fp == NULL) {
+        std::printf("CSV file open failed!\n");
+        return;
+    }
+
+    // CSV 열 제목
+    std::fprintf(
+        fp,
+        "Degree,LectureNote_03,Compare1,Compare2\n"
+    );
+
+    // 각 방향 구간의 histogram 값 저장
+    for (i = 0; i < nbins; ++i) {
+        std::fprintf(
+            fp,
+            "%d-%d,%f,%f,%f\n",
+            i * 180 / nbins,
+            (i + 1) * 180 / nbins,
+            refHist[i],
+            c1Hist[i],
+            c2Hist[i]
+        );
+    }
+
+    std::fclose(fp);
+}
 
 // 동일한 index의 bin 값 차이 평균
 static double meanDifference(
@@ -420,6 +460,14 @@ int main()
         "compare2_with_cell.csv"
     );
 
+    // 세 이미지의 최종 9-bin histogram 저장
+    saveFinalHistogram(
+        hRef.finalHistogram,
+        hC1.finalHistogram,
+        hC2.finalHistogram,
+        NBINS,
+        "final_histogram_with_cell.csv"
+    );
 
     // 평균 절대 차이 계산
     mean1 = meanDifference(
