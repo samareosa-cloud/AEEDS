@@ -45,25 +45,26 @@ static HogResult extractHogNoCell(
          1,  1,  1
     };
 
-    // 반복문 및 계산에 사용할 변수
-    int x, y;
-    int xx, yy;
-    int kx, ky;
-    int bin;
-    int i;
-    int nx, ny;
-    int bx, by;
-    int blockIndex;
+    // 반복문과 좌표 계산에 사용하는 변수
+    int x, y;           // 입력 이미지의 현재 픽셀 좌표
+    int xx, yy;         // 3×3 마스크가 적용되는 주변 픽셀 좌표
+    int kx, ky;         // 3×3 마스크 내부의 x, y 인덱스
+    int bin;            // 현재 픽셀의 gradient 방향이 속하는 histogram bin
+    int i;              // histogram과 배열을 순회하기 위한 반복 변수
+    int nx, ny;         // 가로 방향과 세로 방향의 block 개수
+    int bx, by;         // 현재 block의 왼쪽 위 시작 좌표
+    int blockIndex;     // 현재 처리 중인 block 번호
 
-    float gx, gy;
-    float pixel;
-    float theta;
-    float sumSquares;
-    float inverseNorm;
-    float normalized;
+    // Gradient와 정규화 계산에 사용하는 변수
+    float gx, gy;       // x 방향과 y 방향의 gradient 계산 결과
+    float pixel;        // 0~1 범위로 변환한 현재 픽셀값
+    float theta;        // 현재 픽셀의 gradient 방향(0° 이상 180° 미만)
+    float sumSquares;   // L2 정규화를 위한 histogram 값의 제곱합
+    float inverseNorm;  // L2 norm의 역수
+    float normalized;   // 정규화된 histogram bin 값
 
-    const uchar* row;
-    FILE* fp;
+    const uchar* row;   // 입력 이미지에서 현재 처리하는 행의 시작 주소
+    FILE* fp;           // block별 histogram을 저장할 CSV 파일 포인터
 
     // 각 픽셀의 gradient 크기와 방향 bin 저장
     vector<float> magnitude(width * height, 0.0f);
@@ -277,9 +278,9 @@ static double meanDifference(
     const vector<float>& a,
     const vector<float>& b)
 {
-    size_t i;
-    long double difference;
-    long double sum;
+    size_t i;                // 두 descriptor의 각 index를 순회하는 변수
+    long double difference;  // 동일한 index에 있는 두 bin 값의 차이
+    long double sum;         // 모든 bin의 절댓값 차이를 누적한 합
 
     // Descriptor의 크기가 다르거나 비어 있으면 비교 불가
     if (a.size() != b.size() || a.empty()) {
@@ -383,15 +384,24 @@ int main()
 
 
     // 기준 이미지와 각 비교 이미지의 평균 절대 차이 계산
-    mean1 = meanDifference(hRef.descriptor, hC1.descriptor);
+    mean1 = meanDifference(
+        hRef.descriptor,
+        hC1.descriptor
+    );
 
-    mean2 = meanDifference(hRef.descriptor, hC2.descriptor);
+    mean2 = meanDifference(
+        hRef.descriptor,
+        hC2.descriptor
+    );
 
 
     // 비교 결과 출력
     std::printf("\n[No Cell: Mean Difference]\n");
+
     std::printf("Lecture03 vs Compare1 = %.9f\n",mean1);
+
     std::printf("Lecture03 vs Compare2 = %.9f\n", mean2);
+
 
     // Mean Difference가 작은 이미지를 더 유사하다고 판단
     if (mean1 < mean2) std::printf("Compare1 is more similar.\n");
