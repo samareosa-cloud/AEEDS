@@ -272,6 +272,52 @@ static HogResult extractHogNoCell(
     return result;
 }
 
+// 세 이미지의 최종 9-bin histogram을 CSV로 저장
+static void saveFinalHistogram(
+    const vector<float>& refHistogram,
+    const vector<float>& c1Histogram,
+    const vector<float>& c2Histogram,
+    int nbins,
+    const char* csvPath)
+{
+    int i;       // Histogram bin 번호
+    FILE* fp;    // CSV 파일 포인터
+
+    fp = NULL;
+    fopen_s(&fp, csvPath, "w");
+
+    // 파일 열기 확인
+    if (fp == NULL) {
+        std::printf("Final histogram CSV file open failed!\n");
+        return;
+    }
+
+    // CSV 열 제목
+    std::fprintf(
+        fp,
+        "Degree,LectureNote_03,Compare1,Compare2\n"
+    );
+
+    // 방향별 최종 histogram 저장
+    for (i = 0; i < nbins; ++i) {
+        std::fprintf(
+            fp,
+            "%d-%d,%f,%f,%f\n",
+            i * 180 / nbins,
+            (i + 1) * 180 / nbins,
+            refHistogram[i],
+            c1Histogram[i],
+            c2Histogram[i]
+        );
+    }
+
+    std::fclose(fp);
+
+    std::printf(
+        "Final histogram saved: %s\n",
+        csvPath
+    );
+}
 
 // 동일한 histogram index에 있는 값의 절댓값 차이 평균
 static double meanDifference(
@@ -380,6 +426,16 @@ int main()
         NBINS,
         EPS,
         "compare2_no_cell.csv"
+    );
+
+
+    // 세 이미지의 최종 9-bin histogram 저장
+    saveFinalHistogram(
+        hRef.finalHistogram,
+        hC1.finalHistogram,
+        hC2.finalHistogram,
+        NBINS,
+        "final_histogram_no_cell.csv"
     );
 
 
