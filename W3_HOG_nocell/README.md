@@ -1,40 +1,63 @@
-# HOG Descriptor – No Cell
+# HOG Descriptor
 
-OpenCV를 사용하여 이미지의 HOG(Histogram of Oriented Gradients) Descriptor를 직접 구현하고, 기준 이미지와 비교 이미지 사이의 유사도를 계산한 프로젝트입니다.
-
-이번 구현에서는 16×16 block을 cell로 나누지 않고, 각 block에서 하나의 9-bin histogram을 생성합니다.
+`LectureNote_03.bmp`의 HOG Descriptor를 추출하고 `compare1.bmp`, `compare2.bmp`와 비교함.
 
 ## 개발 환경
 
-- Visual Studio
-- C++
-- OpenCV 3.4.5
-- 실행 환경: Release / x64
+* Visual Studio
+* C++
+* OpenCV 3.4.5
+* Release / x64
+
+## 구현 조건
+
+* Block 크기: `16×16`
+* Block 이동 간격: `8 pixel`
+* Cell 분할: 사용하지 않음
+* 방향 범위: `0°~180°`
+* Histogram: `9-bin`
+* Normalization: Block 단위 L2 normalization
+* 비교 방법: 동일한 descriptor index의 평균 절대 차이
 
 ## 구현 과정
 
-1. 입력 이미지를 Grayscale로 불러옵니다.
-2. 3×3 Prewitt 마스크를 사용하여 x, y 방향 gradient를 계산합니다.
-3. 각 픽셀의 gradient magnitude와 orientation을 구합니다.
-4. Gradient 방향을 0° 이상 180° 미만의 범위로 변환합니다.
-5. 방향을 20° 간격의 9개 bin으로 분류합니다.
-6. 16×16 block을 8픽셀 간격으로 이동합니다.
-7. 각 block에서 9-bin histogram을 생성합니다.
-8. 각 block의 histogram을 L2 정규화합니다.
-9. 정규화된 block histogram을 순서대로 연결하여 HOG Descriptor를 생성합니다.
-10. 동일한 histogram index의 절댓값 차이를 평균하여 이미지 유사도를 비교합니다.
+1. Prewitt mask로 각 픽셀의 x, y 방향 Gradient를 계산함.
+2. Gradient Magnitude와 Orientation을 계산함.
+3. 방향을 20° 간격의 9개 bin으로 구분함.
+4. `16×16` Block 안의 Magnitude를 해당 방향 bin에 누적함.
+5. 각 Block의 9-bin Histogram을 L2 정규화함.
+6. Block을 8픽셀씩 이동하며 Histogram을 추출함.
+7. 모든 Block의 Histogram을 연결하여 HOG Descriptor를 생성함.
+8. 동일한 descriptor index의 절댓값 차이를 평균내어 이미지를 비교함.
 
-## HOG 구조
+## HOG Dimension
 
-- Block 크기: `16×16`
-- 이동 간격: `8 pixel`
-- Cell 분할: 없음
-- 방향 범위: `0° 이상 180° 미만`
-- Histogram bin: `9개`
-- Bin 간격: `20°`
-- Block당 Descriptor 차원: `9`
-
-예를 들어 block이 총 105개라면 최종 HOG Descriptor의 차원은 다음과 같습니다.
+`64×128` 이미지에서 추출되는 Block 개수는 다음과 같음.
 
 ```text
-105 blocks × 9 bins = 945 dimensions
+가로 Block = (64 - 16) / 8 + 1 = 7
+세로 Block = (128 - 16) / 8 + 1 = 15
+전체 Block = 7 × 15 = 105
+```
+
+Block 하나에서 9개의 Histogram 값이 생성되므로 전체 HOG Descriptor는 다음과 같음.
+
+```text
+105 Blocks × 9 bins = 945 dimensions
+```
+
+## 비교 방법
+
+```text
+Mean Difference = Σ|Reference[i] - Compare[i]| / 945
+```
+
+Mean Difference가 작을수록 기준 이미지와 유사하다고 판단함.
+
+## 출력 파일
+
+* `LectureNote_03_blocks.csv`: 기준 이미지의 Block별 Histogram
+* `compare1_blocks.csv`: Compare1의 Block별 Histogram
+* `compare2_blocks.csv`: Compare2의 Block별 Histogram
+* `descriptor_comparison.csv`: 동일한 descriptor index의 값과 차이
+* `final_histogram.csv`: 세 이미지의 최종 9-bin Histogram
