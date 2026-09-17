@@ -6,463 +6,609 @@
 using namespace cv;
 using std::vector;
 
-constexpr float PI = 3.14159265358979323846f;
+const float PI = 3.14159265358979323846f;
 
 
-// HOG 추출 결과
-struct HogResult {
-    vector<float> descriptor;      // 모든 block의 histogram을 연결한 HOG descriptor
-    vector<float> finalHistogram;  // 전체 block을 방향별로 합친 최종 9-bin histogram
+// HOG 계산 결과
+struct HogResult
+{
+    vector<float> descriptor;          // 전체 945차원 HOG
+    vector<vector<float>> blockHist;   // 105개 Block의 9-bin
+    vector<float> finalHistogram;      // 보고서 그래프용 최종 9-bin
+
+    int blocksX;                       // 가로 Block 개수
+    int blocksY;                       // 세로 Block 개수
 };
 
 
-// Cell을 나누지 않는 HOG 추출
-// block 크기: 16×16
-// block 이동 간격: 8 pixel
-// block당 histogram: 9-bin
-static HogResult extractHogNoCell(
+// Cell을 나누지 않는 HOG 계산
+static HogResult extractHOG(
     const Mat& input,
-    int block,
+    int blockSize,
     int interval,
-    int nbins,
-    float eps,
-    const char* csvPath)
+    int numberOfBins,
+    float epsilon)
 {
-    // 이미지 크기
-    const int width = input.cols;
-    const int height = input.rows;
+    int x, y, xx, yy;
+    int bx, by;
+    int i;
+    int bin;
+    int blockIndex;
 
-    // x, y 방향 gradient 계산을 위한 3×3 Prewitt 마스크
-    const int maskX[9] = {
+    int height;
+    int width;
+    int blocksX;
+    int blocksY;
+
+    const int maskSize = 3;
+
+    float convX;
+    float convY;
+    float pixel;
+    float magnitudeValue;
+    float direction;
+    float binWidth;
+    float sumSquares;
+    float norm;
+
+    // Prewitt mask
+    int maskX[9] = {
         -1, 0, 1,
         -1, 0, 1,
         -1, 0, 1
     };
 
-    const int maskY[9] = {
+    int maskY[9] = {
         -1, -1, -1,
          0,  0,  0,
          1,  1,  1
     };
 
-    // 반복문과 좌표 계산에 사용하는 변수
-    int x, y;           // 입력 이미지의 현재 픽셀 좌표
-    int xx, yy;         // 3×3 마스크가 적용되는 주변 픽셀 좌표
-    int kx, ky;         // 3×3 마스크 내부의 x, y 인덱스
-    int bin;            // 현재 픽셀의 gradient 방향이 속하는 histogram bin
-    int i;              // histogram과 배열을 순회하기 위한 반복 변수
-    int nx, ny;         // 가로 방향과 세로 방향의 block 개수
-    int bx, by;         // 현재 block의 왼쪽 위 시작 좌표
-    int blockIndex;     // 현재 처리 중인 block 번호
+    height = input.rows;
+    width = input.cols;
 
-    // Gradient와 정규화 계산에 사용하는 변수
-    float gx, gy;       // x 방향과 y 방향의 gradient 계산 결과
-    float pixel;        // 0~1 범위로 변환한 현재 픽셀값
-    float theta;        // 현재 픽셀의 gradient 방향(0° 이상 180° 미만)
-    float sumSquares;   // L2 정규화를 위한 histogram 값의 제곱합
-    float inverseNorm;  // L2 norm의 역수
-    float normalized;   // 정규화된 histogram bin 값
+    // 방향 범위 180도를 9개로 분할
+    binWidth = 180.0f / numberOfBins;
 
-    const uchar* row;   // 입력 이미지에서 현재 처리하는 행의 시작 주소
-    FILE* fp;           // block별 histogram을 저장할 CSV 파일 포인터
+    // 픽셀별 Magnitude 저장
+    vector<float> magnitude(height * width, 0.0f);
 
-    // 각 픽셀의 gradient 크기와 방향 bin 저장
-    vector<float> magnitude(width * height, 0.0f);
-    vector<unsigned char> binImage(width * height, 0);
+    // 픽셀별 방향 bin 저장
+    vector<int> binImage(height * width, 0);
 
-    // 현재 block의 9-bin histogram
-    vector<float> hist(nbins, 0.0f);
-
-    // HOG 추출 결과
     HogResult result;
+ 
 
+    // 1. 모든 픽셀의 Gradient 계산
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
 
-    // 1) 각 픽셀의 gradient magnitude와 orientation 계산
-    for (y = 0; y < height; ++y) {
-        for (x = 0; x < width; ++x) {
+            convX = 0.0f;
+            convY = 0.0f;
 
-            gx = 0.0f;
-            gy = 0.0f;
+            // 현재 픽셀 주변의 3×3 영역
+            for (yy = y - maskSize / 2;
+                yy <= y + maskSize / 2;
+                yy++) {
 
-            // 현재 픽셀을 중심으로 3×3 convolution
-            for (yy = y - 1; yy <= y + 1; ++yy) {
+                for (xx = x - maskSize / 2;
+                    xx <= x + maskSize / 2;
+                    xx++) {
 
-                // 이미지의 위·아래 경계를 벗어나면 제외
-                if (yy < 0 || yy >= height)
-                    continue;
+                    // 이미지 범위 내부인지 확인
+                    if (yy >= 0 && yy < height
+                        && xx >= 0 && xx < width) {
 
-                // yy번째 행의 시작 주소
-                row = input.ptr<uchar>(yy);
+                        // 픽셀값을 0~1로 변환
+                        pixel = input.at<uchar>(yy, xx) / 255.0f;
 
-                for (xx = x - 1; xx <= x + 1; ++xx) {
+                        // x 방향 Gradient
+                        convX += maskX[ (yy - (y - 1)) * maskSize + (xx - (x - 1)) ] * pixel;
 
-                    // 이미지의 좌·우 경계를 벗어나면 제외
-                    if (xx < 0 || xx >= width)
-                        continue;
-
-                    // 현재 픽셀에 대응하는 마스크 인덱스
-                    ky = yy - (y - 1);
-                    kx = xx - (x - 1);
-
-                    // 픽셀값을 0~1 범위로 변환
-                    pixel = row[xx] / 255.0f;
-
-                    // x, y 방향 gradient 누적
-                    gx += maskX[ky * 3 + kx] * pixel;
-                    gy += maskY[ky * 3 + kx] * pixel;
+                        // y 방향 Gradient
+                        convY += maskY[ (yy - (y - 1)) * maskSize + (xx - (x - 1)) ] * pixel;
+                    }
                 }
             }
 
-            // Gradient 방향을 degree 단위로 계산
-            theta = std::atan2(gy, gx) * 180.0f / PI;
 
-            // 방향 범위를 [0, 180)으로 변환
-            if (theta < 0.0f)
-                theta += 180.0f;
+            // Gradient Magnitude
+            magnitudeValue = std::sqrt(convX * convX + convY * convY);
 
-            // 180도는 0도와 같은 방향으로 처리
-            if (theta >= 180.0f)
-                theta -= 180.0f;
+            // Gradient 방향: radian → degree
+            direction = std::atan2(convY, convX) * 180.0f / PI;
 
-            // Gradient 방향을 9개 bin으로 분류
-            bin = static_cast<int>(theta / (180.0f / nbins));
+            // 방향을 0° 이상 180° 미만으로 변환
+            if (direction < 0.0f) {
+                direction += 180.0f;
+            }
 
-            // 계산 오차로 bin 범위를 벗어나는 경우 방지
-            if (bin >= nbins) bin = nbins - 1;
+            if (direction >= 180.0f) {
+                direction -= 180.0f;
+            }
 
-            // Gradient magnitude 저장
-            magnitude[y * width + x] = std::sqrt(gx * gx + gy * gy);
+            // 방향을 9개 bin 중 하나로 분류
+            bin = static_cast<int>(direction / binWidth);
 
-            // Gradient orientation bin 저장
-            binImage[y * width + x] = static_cast<unsigned char>(bin);
+            // 계산 오차로 인한 범위 초과 방지
+            if (bin >= numberOfBins) bin = numberOfBins - 1;
+
+            // 현재 픽셀의 Magnitude 저장
+            magnitude[y * width + x] = magnitudeValue;
+
+            // 현재 픽셀의 방향 bin 저장
+            binImage[y * width + x] = bin;
         }
     }
 
 
-    // 2) 가로·세로 방향 block 개수 계산
-    nx = (width - block) / interval + 1;
-    ny = (height - block) / interval + 1;
+    // 2. Block 개수 계산
+    blocksX = (width - blockSize) / interval + 1;
 
-    // Descriptor 크기만큼 메모리 미리 확보
-    result.descriptor.reserve(nx * ny * nbins);
+    blocksY = (height - blockSize) / interval + 1;
 
-    // 최종 9-bin histogram을 0으로 초기화
-    result.finalHistogram.assign(nbins, 0.0f);
+    result.blocksX = blocksX;
+    result.blocksY = blocksY;
 
+    // 전체 HOG 크기만큼 메모리 확보
+    result.descriptor.reserve(blocksX * blocksY * numberOfBins);
 
-    // 3) Block별 histogram을 저장할 CSV 파일 열기
-    fp = NULL;
-    fopen_s(&fp, csvPath, "w");
-
-    if (fp != NULL) {
-        std::fprintf(fp, "Block");
-
-        // CSV 파일의 방향 구간 제목 작성
-        for (i = 0; i < nbins; ++i) {
-            std::fprintf(
-                fp,
-                ",%d-%d",
-                i * 180 / nbins,
-                (i + 1) * 180 / nbins
-            );
-        }
-
-        std::fprintf(fp, "\n");
-    }
+    // 보고서 그래프용 최종 9-bin 초기화
+    result.finalHistogram.assign(numberOfBins, 0.0f);
 
 
-    // 4) 16×16 block을 8픽셀씩 이동
+    // 3. 16×16 Block을 8픽셀 간격으로 이동
     blockIndex = 0;
 
-    for (by = 0; by <= height - block; by += interval) {
-        for (bx = 0; bx <= width - block; bx += interval) {
+    for (by = 0; by <= height - blockSize; by += interval) {
 
-            // 새로운 block을 계산하기 전 histogram 초기화
-            for (i = 0; i < nbins; ++i) {
-                hist[i] = 0.0f;
-            }
+        for (bx = 0; bx <= width - blockSize; bx += interval) {
+
+            // 현재 Block의 9-bin histogram
+            vector<float> histogram(numberOfBins, 0.0f);
 
 
-            // 4-1) Block 내부의 gradient magnitude 누적
-            for (y = by; y < by + block; ++y) {
-                for (x = bx; x < bx + block; ++x) {
+            // 4. 현재 16×16 Block 내부 픽셀 순회
+            for (y = by; y < by + blockSize; y++) {
 
+                for (x = bx; x < bx + blockSize; x++) {
+
+                    // 현재 픽셀의 방향 bin
                     bin = binImage[y * width + x];
 
-                    hist[bin] += magnitude[y * width + x];
+                    // 해당 방향 bin에 Magnitude 누적
+                    histogram[bin] += magnitude[y * width + x];
                 }
             }
 
 
-            // 4-2) 현재 block histogram의 L2 크기 계산
-            sumSquares = eps;
+            // 5. Block 단위 L2 normalization
+            sumSquares = 0.0f;
 
-            for (i = 0; i < nbins; ++i) {
-                sumSquares += hist[i] * hist[i];
+            for (i = 0; i < numberOfBins; i++) {
+
+                sumSquares += histogram[i] * histogram[i];
             }
 
-            inverseNorm = 1.0f / std::sqrt(sumSquares);
+            norm = std::sqrt(sumSquares + epsilon);
 
 
-            // CSV에 block 번호 저장
-            if (fp != NULL) {
-                std::fprintf(fp, "%d", blockIndex + 1);
+            // 6. 정규화 및 전체 Descriptor 연결
+            for (i = 0; i < numberOfBins; i++) {
+
+                histogram[i] /= norm;
+
+                // Block의 9개 값을 전체 HOG 뒤에 연결
+                result.descriptor.push_back(histogram[i]);
+
+                // 보고서용 전체 9-bin에 누적
+                result.finalHistogram[i] += histogram[i];
             }
 
 
-            // 4-3) Block histogram을 정규화하여 descriptor에 연결
-            for (i = 0; i < nbins; ++i) {
+            // Block별 정규화 Histogram 저장
+            result.blockHist.push_back(histogram);
 
-                normalized = hist[i] * inverseNorm;
-
-                // 전체 HOG descriptor에 추가
-                result.descriptor.push_back(normalized);
-
-                // 같은 방향 bin끼리 누적
-                result.finalHistogram[i] += normalized;
-
-                // 정규화된 histogram을 CSV에 저장
-                if (fp != NULL) {
-                    std::fprintf(fp, ",%f", normalized);
-                }
-            }
-
-            if (fp != NULL) {
-                std::fprintf(fp, "\n");
-            }
-
-            ++blockIndex;
+            blockIndex++;
         }
     }
 
 
-    // CSV 파일 닫기
-    if (fp != NULL) {
-        std::fclose(fp);
-    }
+    // 7. 보고서용 최종 9-bin 정규화
+    sumSquares = 0.0f;
 
+    for (i = 0; i < numberOfBins; i++) {
 
-    // 5) 전체 block을 합친 최종 9-bin histogram 정규화
-    sumSquares = eps;
-
-    for (i = 0; i < nbins; ++i) {
         sumSquares += result.finalHistogram[i] * result.finalHistogram[i];
     }
 
-    inverseNorm = 1.0f / std::sqrt(sumSquares);
+    norm = std::sqrt(sumSquares + epsilon);
 
-    for (i = 0; i < nbins; ++i) {
-        result.finalHistogram[i] *= inverseNorm;
+    for (i = 0; i < numberOfBins; i++) {
+
+        result.finalHistogram[i] /= norm;
     }
-
-
-    // HOG 정보 출력
-    std::printf(
-        "Blocks = %d x %d = %d\n",
-        nx,
-        ny,
-        nx * ny
-    );
-
-    std::printf(
-        "Descriptor dimension = %zu\n",
-        result.descriptor.size()
-    );
 
     return result;
 }
 
-// 세 이미지의 최종 9-bin histogram을 CSV로 저장
-static void saveFinalHistogram(
-    const vector<float>& refHistogram,
-    const vector<float>& c1Histogram,
-    const vector<float>& c2Histogram,
-    int nbins,
-    const char* csvPath)
+
+// 각 이미지의 Block별 9-bin Histogram 저장
+static void saveBlockHistograms(
+    const HogResult& result,
+    int numberOfBins,
+    const char* fileName)
 {
-    int i;       // Histogram bin 번호
-    FILE* fp;    // CSV 파일 포인터
+    FILE* file;
+    int block;
+    int bin;
 
-    fp = NULL;
-    fopen_s(&fp, csvPath, "w");
+    file = NULL;
+    fopen_s(&file, fileName, "w");
 
-    // 파일 열기 확인
-    if (fp == NULL) {
-        std::printf("Final histogram CSV file open failed!\n");
+    if (file == NULL) {
+        std::printf(
+            "File open failed: %s\n",
+            fileName
+        );
         return;
     }
 
-    // CSV 열 제목
-    std::fprintf(
-        fp,
-        "Degree,LectureNote_03,Compare1,Compare2\n"
-    );
+    // CSV 제목
+    std::fprintf(file, "Block");
 
-    // 방향별 최종 histogram 저장
-    for (i = 0; i < nbins; ++i) {
+    for (bin = 0; bin < numberOfBins; bin++) {
+
         std::fprintf(
-            fp,
-            "%d-%d,%f,%f,%f\n",
-            i * 180 / nbins,
-            (i + 1) * 180 / nbins,
-            refHistogram[i],
-            c1Histogram[i],
-            c2Histogram[i]
+            file,
+            ",%d-%d",
+            bin * 180 / numberOfBins,
+            (bin + 1) * 180 / numberOfBins
         );
     }
 
-    std::fclose(fp);
+    std::fprintf(file, "\n");
 
-    std::printf(
-        "Final histogram saved: %s\n",
-        csvPath
-    );
+
+    // Block별 9-bin 값 저장
+    for (block = 0; block < static_cast<int>(result.blockHist.size()); block++) {
+
+        std::fprintf(
+            file,
+            "%d",
+            block + 1
+        );
+
+        for (bin = 0; bin < numberOfBins; bin++) {
+
+            std::fprintf(
+                file,
+                ",%.9f",
+                result.blockHist[block][bin]
+            );
+        }
+
+        std::fprintf(file, "\n");
+    }
+
+    std::fclose(file);
 }
 
-// 동일한 histogram index에 있는 값의 절댓값 차이 평균
-static double meanDifference(
-    const vector<float>& a,
-    const vector<float>& b)
-{
-    size_t i;                // 두 descriptor의 각 index를 순회하는 변수
-    long double difference;  // 동일한 index에 있는 두 bin 값의 차이
-    long double sum;         // 모든 bin의 절댓값 차이를 누적한 합
 
-    // Descriptor의 크기가 다르거나 비어 있으면 비교 불가
-    if (a.size() != b.size() || a.empty()) {
+// 세 이미지의 최종 9-bin 저장
+static void saveFinalHistograms(
+    const HogResult& reference,
+    const HogResult& compare1,
+    const HogResult& compare2,
+    int numberOfBins,
+    const char* fileName)
+{
+    FILE* file;
+    int bin;
+
+    file = NULL;
+    fopen_s(&file, fileName, "w");
+
+    if (file == NULL) {
+        std::printf(
+            "File open failed: %s\n",
+            fileName
+        );
+        return;
+    }
+
+    std::fprintf(
+        file,
+        "Degree,LectureNote_03,Compare1,Compare2\n"
+    );
+
+    for (bin = 0;
+        bin < numberOfBins;
+        bin++) {
+
+        std::fprintf(
+            file,
+            "%d-%d,%.9f,%.9f,%.9f\n",
+            bin * 180 / numberOfBins,
+            (bin + 1) * 180 / numberOfBins,
+            reference.finalHistogram[bin],
+            compare1.finalHistogram[bin],
+            compare2.finalHistogram[bin]
+        );
+    }
+
+    std::fclose(file);
+}
+
+
+// 945개 Descriptor의 동일 index 차이 저장
+static void saveDescriptorComparison(
+    const vector<float>& reference,
+    const vector<float>& compare1,
+    const vector<float>& compare2,
+    const char* fileName)
+{
+    FILE* file;
+    size_t i;
+
+    file = NULL;
+    fopen_s(&file, fileName, "w");
+
+    if (file == NULL) {
+        std::printf(
+            "File open failed: %s\n",
+            fileName
+        );
+        return;
+    }
+
+    std::fprintf(
+        file,
+        "Index,LectureNote_03,Compare1,Compare2,"
+        "Difference_1,Difference_2\n"
+    );
+
+    for (i = 0; i < reference.size(); i++) {
+
+        std::fprintf(
+            file,
+            "%zu,%.9f,%.9f,%.9f,%.9f,%.9f\n",
+            i,
+            reference[i],
+            compare1[i],
+            compare2[i],
+            std::fabs(reference[i] - compare1[i]),
+            std::fabs(reference[i] - compare2[i])
+        );
+    }
+
+    std::fclose(file);
+}
+
+
+// 동일한 Histogram index 값의 차이에 대한 평균
+static double meanDifference(
+    const vector<float>& first,
+    const vector<float>& second)
+{
+    size_t i;
+    long double sum;
+
+    // Descriptor 크기 확인
+    if (first.size() != second.size() || first.empty()) {
+
         return -1.0;
     }
 
     sum = 0.0L;
 
-    // 동일한 index에 있는 bin 값의 절댓값 차이 누적
-    for (i = 0; i < a.size(); ++i) {
-        difference = static_cast<long double>(a[i]) - static_cast<long double>(b[i]);
-        sum += std::fabs(difference);
+    // 동일 index의 절댓값 차이 누적
+    for (i = 0; i < first.size(); i++) {
+
+        sum += std::fabs(
+            static_cast<long double>(first[i])
+            - static_cast<long double>(second[i])
+        );
     }
 
-    // 절댓값 차이의 합을 전체 bin 개수로 나눔
-    return static_cast<double>(sum / a.size());
+    // 전체 Descriptor 개수로 나눔
+    return static_cast<double>(
+        sum / first.size()
+        );
 }
 
 
 int main()
 {
     // 이미지 경로
-    const char* refPath = "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/LectureNote_03.bmp";
+    const char* referencePath =
+        "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/LectureNote_03.bmp";
 
-    const char* c1Path = "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/compare1.bmp";
+    const char* compare1Path =
+        "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/compare1.bmp";
 
-    const char* c2Path = "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/compare2.bmp";
+    const char* compare2Path =
+        "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/compare2.bmp";
 
-    // HOG 파라미터
-    const int BLOCK = 16;
+
+    // 과제 조건
+    const int BLOCK_SIZE = 16;
     const int INTERVAL = 8;
-    const int NBINS = 9;
-    const float EPS = 1e-6f;
-
-    // 입력 이미지
-    Mat ref;
-    Mat c1;
-    Mat c2;
-
-    // 각 이미지의 HOG 추출 결과
-    HogResult hRef;
-    HogResult hC1;
-    HogResult hC2;
-
-    // 평균 절대 차이
-    double mean1;
-    double mean2;
+    const int NUMBER_OF_BINS = 9;
+    const float EPSILON = 1e-6f;
 
 
-    // 이미지를 grayscale로 불러오기
-    ref = imread(refPath, IMREAD_GRAYSCALE);
-    c1 = imread(c1Path, IMREAD_GRAYSCALE);
-    c2 = imread(c2Path, IMREAD_GRAYSCALE);
+    Mat referenceImage;
+    Mat compare1Image;
+    Mat compare2Image;
+
+    HogResult referenceHOG;
+    HogResult compare1HOG;
+    HogResult compare2HOG;
+
+    double difference1;
+    double difference2;
 
 
-    // 이미지가 정상적으로 불러와졌는지 확인
-    if (ref.empty() || c1.empty() || c2.empty()) {
+    // 이미지 읽기
+    referenceImage = imread(
+        referencePath,
+        IMREAD_GRAYSCALE
+    );
+
+    compare1Image = imread(
+        compare1Path,
+        IMREAD_GRAYSCALE
+    );
+
+    compare2Image = imread(
+        compare2Path,
+        IMREAD_GRAYSCALE
+    );
+
+
+    // 이미지 로드 확인
+    if (referenceImage.empty()
+        || compare1Image.empty()
+        || compare2Image.empty()) {
+
         std::printf("Image load failed!\n");
         return -1;
     }
 
 
-    // 세 이미지의 크기가 같은지 확인
-    if (ref.size() != c1.size()
-        || ref.size() != c2.size()) {
+    // 이미지 크기 확인
+    if (referenceImage.size() != compare1Image.size()
+        || referenceImage.size() != compare2Image.size()) {
 
         std::printf("Image size mismatch!\n");
         return -1;
     }
 
 
-    // 기준 이미지의 HOG 추출
-    hRef = extractHogNoCell(
-        ref,
-        BLOCK,
+    // 각 이미지의 HOG 추출
+    referenceHOG = extractHOG(
+        referenceImage,
+        BLOCK_SIZE,
         INTERVAL,
-        NBINS,
-        EPS,
-        "LectureNote_03_no_cell.csv"
+        NUMBER_OF_BINS,
+        EPSILON
     );
 
-    // Compare1 이미지의 HOG 추출
-    hC1 = extractHogNoCell(
-        c1,
-        BLOCK,
+    compare1HOG = extractHOG(
+        compare1Image,
+        BLOCK_SIZE,
         INTERVAL,
-        NBINS,
-        EPS,
-        "compare1_no_cell.csv"
+        NUMBER_OF_BINS,
+        EPSILON
     );
 
-    // Compare2 이미지의 HOG 추출
-    hC2 = extractHogNoCell(
-        c2,
-        BLOCK,
+    compare2HOG = extractHOG(
+        compare2Image,
+        BLOCK_SIZE,
         INTERVAL,
-        NBINS,
-        EPS,
-        "compare2_no_cell.csv"
+        NUMBER_OF_BINS,
+        EPSILON
     );
 
 
-    // 세 이미지의 최종 9-bin histogram 저장
-    saveFinalHistogram(
-        hRef.finalHistogram,
-        hC1.finalHistogram,
-        hC2.finalHistogram,
-        NBINS,
-        "final_histogram_no_cell.csv"
+    // Block별 Histogram 저장
+    saveBlockHistograms(
+        referenceHOG,
+        NUMBER_OF_BINS,
+        "LectureNote_03_blocks.csv"
+    );
+
+    saveBlockHistograms(
+        compare1HOG,
+        NUMBER_OF_BINS,
+        "compare1_blocks.csv"
+    );
+
+    saveBlockHistograms(
+        compare2HOG,
+        NUMBER_OF_BINS,
+        "compare2_blocks.csv"
     );
 
 
-    // 기준 이미지와 각 비교 이미지의 평균 절대 차이 계산
-    mean1 = meanDifference(
-        hRef.descriptor,
-        hC1.descriptor
+    // 보고서 그래프용 최종 9-bin 저장
+    saveFinalHistograms(
+        referenceHOG,
+        compare1HOG,
+        compare2HOG,
+        NUMBER_OF_BINS,
+        "final_histogram.csv"
     );
 
-    mean2 = meanDifference(
-        hRef.descriptor,
-        hC2.descriptor
+
+    // 945차원 값과 차이 저장
+    saveDescriptorComparison(
+        referenceHOG.descriptor,
+        compare1HOG.descriptor,
+        compare2HOG.descriptor,
+        "descriptor_comparison.csv"
     );
 
 
-    // 비교 결과 출력
-    std::printf("\n[No Cell: Mean Difference]\n");
+    // 동일 index 값의 평균 절대 차이 계산
+    difference1 = meanDifference(
+        referenceHOG.descriptor,
+        compare1HOG.descriptor
+    );
 
-    std::printf("Lecture03 vs Compare1 = %.9f\n",mean1);
+    difference2 = meanDifference(
+        referenceHOG.descriptor,
+        compare2HOG.descriptor
+    );
 
-    std::printf("Lecture03 vs Compare2 = %.9f\n", mean2);
+
+    // 결과 출력
+    std::printf(
+        "Image size = %d x %d\n",
+        referenceImage.cols,
+        referenceImage.rows
+    );
+
+    std::printf(
+        "Blocks = %d x %d = %d\n",
+        referenceHOG.blocksX,
+        referenceHOG.blocksY,
+        referenceHOG.blocksX
+        * referenceHOG.blocksY
+    );
+
+    std::printf(
+        "Dimension per block = %d\n",
+        NUMBER_OF_BINS
+    );
+
+    std::printf(
+        "HOG descriptor dimension = %zu\n",
+        referenceHOG.descriptor.size()
+    );
+
+    std::printf(
+        "\nLectureNote_03 vs Compare1 = %.9f\n",
+        difference1
+    );
+
+    std::printf(
+        "LectureNote_03 vs Compare2 = %.9f\n",
+        difference2
+    );
 
 
-    // Mean Difference가 작은 이미지를 더 유사하다고 판단
-    if (mean1 < mean2) std::printf("Compare1 is more similar.\n");
-    else if (mean2 < mean1) std::printf("Compare2 is more similar.\n");
-    else std::printf("Same difference.\n");
-  
+    // 평균 차이가 작은 이미지가 더 유사
+    if (difference1 < difference2) {
+        std::printf("\nCompare1 is more similar.\n");
+    }
+    else if (difference2 < difference1) {
+        std::printf("\nCompare2 is more similar.\n");
+    }
+    else {
+        std::printf("\nBoth images have the same difference.\n");
+    }
+
     return 0;
 }
