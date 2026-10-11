@@ -2,6 +2,17 @@
 #include "utils.h"
 #include <opencv2/opencv.hpp>
 
+// findHomography / findFundamentalMat 선언 위치가 버전마다 다름
+//  - OpenCV 5 (Homebrew): opencv2/geometry/3d.hpp  ← opencv.hpp 가 자동으로 안 불러옴
+//  - OpenCV 3.4 / 4.x   : opencv2/calib3d.hpp
+#if __has_include(<opencv2/geometry/3d.hpp>)
+#include <opencv2/geometry/3d.hpp>
+#elif __has_include(<opencv2/3d.hpp>)
+#include <opencv2/3d.hpp>
+#else
+#include <opencv2/calib3d.hpp>
+#endif
+
 using namespace cv;
 using std::vector;
 
