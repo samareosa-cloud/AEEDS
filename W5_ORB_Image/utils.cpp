@@ -5,6 +5,12 @@
 using namespace cv;
 using std::vector;
 
+// RANSAC 방법 번호. OpenCV 3.4 / 4.x / 5.x 모두 값이 8 로 같다.
+// OpenCV 5 는 이 상수가 opencv2/geometry/3d.hpp 로 옮겨져서 opencv.hpp 만으로는
+// 안 보일 수 있으므로 값을 직접 쓴다. (슬라이드/윈도우 코드: RANSAC, FM_RANSAC)
+static const int METHOD_RANSAC = 8;      // = cv::RANSAC
+static const int METHOD_FM_RANSAC = 8;   // = cv::FM_RANSAC
+
 void draw_keypoints(Mat& img, const vector<KeyPoint>& kpts)
 {
     for (size_t i = 0; i < kpts.size(); i++) {
@@ -46,9 +52,9 @@ void compute_inliers_ransac(const vector<Point2f>& matches, vector<Point2f>& inl
     if (npoints > 8) {
         // ★ RANSAC: homography 추정, 오차 ≤ error(px) 인 매칭만 inlier (status = 1)
         if (use_fund)
-            findFundamentalMat(points1, points2, FM_RANSAC, error, 0.99, status);
+            findFundamentalMat(points1, points2, METHOD_FM_RANSAC, error, 0.99, status);
         else
-            findHomography(points1, points2, RANSAC, error, status);
+            findHomography(points1, points2, METHOD_RANSAC, error, status);
 
         for (int i = 0; i < npoints; i++) {
             if (status.at<uchar>(i) == 1) {
