@@ -1,25 +1,18 @@
 {
-  // macOS + VS Code: Cmd+Shift+B 로 빌드 & 실행
-  // - 실행 파일은 각 실습 폴더의 build/ 에 생성
-  // - 실행은 .cpp 가 있는 폴더에서 → imread("test.jpg") 같은 상대경로가 그대로 동작
+  // macOS + VS Code: 실습 폴더 안의 아무 파일이나 열고 Cmd+Shift+B → 빌드 & 실행
+  // - 그 폴더의 .cpp 를 전부 같이 빌드 (W5 처럼 main.cpp + cornerDetector.cpp / utils.cpp 인 경우도 OK)
+  // - 실행 파일: 각 실습 폴더의 build/run
+  // - 실행은 그 폴더에서 → imread("test.jpg") 같은 상대경로가 그대로 동작
   // - pkg-config 이름은 opencv5 를 먼저 찾고, 없으면 opencv4 사용
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "OpenCV: 현재 파일 빌드 & 실행",
+      "label": "OpenCV: 빌드 & 실행 (폴더 전체 .cpp)",
       "type": "shell",
-      "command": "mkdir -p \"${fileDirname}/build\" && clang++ -std=c++17 -O2 \"${file}\" -o \"${fileDirname}/build/${fileBasenameNoExtension}\" $(pkg-config --cflags --libs opencv5 2>/dev/null || pkg-config --cflags --libs opencv4) && cd \"${fileDirname}\" && \"./build/${fileBasenameNoExtension}\"",
+      "command": "cd \"${fileDirname}\" && mkdir -p build && clang++ -std=c++17 -O2 *.cpp -o build/run $(pkg-config --cflags --libs opencv5 2>/dev/null || pkg-config --cflags --libs opencv4) && ./build/run",
       "group": { "kind": "build", "isDefault": true },
       "presentation": { "focus": true, "panel": "dedicated", "clear": true },
-      "problemMatcher": ["$gcc"]
-    },
-    {
-      "label": "OpenCV: 폴더 전체 .cpp 빌드 & 실행 (W5 처럼 파일 여러 개)",
-      "type": "shell",
-      "command": "mkdir -p \"${fileDirname}/build\" && clang++ -std=c++17 -O2 \"${fileDirname}\"/*.cpp -o \"${fileDirname}/build/main\" $(pkg-config --cflags --libs opencv5 2>/dev/null || pkg-config --cflags --libs opencv4) && cd \"${fileDirname}\" && ./build/main",
-      "group": "build",
-      "presentation": { "focus": true, "panel": "dedicated", "clear": true },
-      "problemMatcher": ["$gcc"]
+      "problemMatcher": { "base": "$gcc", "fileLocation": ["relative", "${fileDirname}"] }
     }
   ]
 }

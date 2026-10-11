@@ -157,12 +157,8 @@ AEEDS/
 
 1. `brew install opencv pkg-config`
 2. VS Code 에서 **`AEEDS` 폴더 자체**를 연다 (`.vscode` 설정을 읽어야 함)
-3. 실행할 `.cpp` 를 열고
-
-| 폴더 | 실행 방법 |
-|---|---|
-| `.cpp` 가 1개인 폴더 (W2~W4, `W5_VideoCapture`, `W6_*`) | **`Cmd + Shift + B`** |
-| `.cpp` 가 여러 개인 폴더 (`W5_HarrisVideo`, `W5_ORB_Image`, `W5_ORB_Video`) | `Cmd + Shift + P` → `Tasks: Run Task` → **폴더 전체 .cpp 빌드 & 실행** |
+3. 실습 폴더 안의 아무 `.cpp` 나 열고 **`Cmd + Shift + B`** → 그 폴더의 `.cpp` 를 전부 같이 빌드하고 실행
+   (W5 처럼 `main.cpp` + `cornerDetector.cpp` / `utils.cpp` 로 나뉜 폴더도 똑같이)
 
 - 결과 창 닫기: 창을 클릭한 뒤 아무 키 / 멈추면 터미널에서 `Ctrl + C`
 - 웹캠 권한: 시스템 설정 → 개인정보 보호 및 보안 → 카메라 → Visual Studio Code 허용 후 VS Code 재시작
