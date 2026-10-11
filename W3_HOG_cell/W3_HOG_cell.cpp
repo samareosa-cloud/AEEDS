@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS  // VS 에서 fopen 경고(C4996) 끄기, 맥에서는 영향 없음
 #include <opencv2/opencv.hpp>
 #include <cmath>
 #include <cstdio>
@@ -160,7 +161,7 @@ static HogResult extractHogWithCell(
 
     // 3) CSV 파일 열기
     fp = NULL;
-    fopen_s(&fp, csvPath, "w");
+    fp = fopen(csvPath, "w");
 
     if (fp != NULL) {
         std::fprintf(fp, "Block");
@@ -317,7 +318,7 @@ static void saveFinalHistogram(
     FILE* fp;    // CSV 파일 포인터
 
     fp = NULL;
-    fopen_s(&fp, csvPath, "w");
+    fp = fopen(csvPath, "w");
 
     if (fp == NULL) {
         std::printf("CSV file open failed!\n");
@@ -378,13 +379,13 @@ int main()
 {
     // 이미지 경로
     const char* refPath
-        = "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/LectureNote_03.bmp";
+        = "LectureNote_03.bmp";
 
     const char* c1Path
-        = "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/compare1.bmp";
+        = "compare1.bmp";
 
     const char* c2Path
-        = "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/compare2.bmp";
+        = "compare2.bmp";
 
     // HOG 파라미터
     const int BLOCK = 16;       // Block 크기

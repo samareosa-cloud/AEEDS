@@ -59,7 +59,7 @@ void imageRotation(Mat input, float degree)
     imshow("Original Image", input);
     imshow("Rotation Result", result);
 
-    imwrite("C:/Users/sinbc/rotationResult.bmp", result);
+    imwrite("rotationResult.bmp", result);
 
     waitKey(0);
 }
@@ -67,8 +67,8 @@ void imageRotation(Mat input, float degree)
 int main()
 {
     Mat input = imread(
-        "C:/Users/sinbc/test.jpg",
-        CV_LOAD_IMAGE_GRAYSCALE
+        "test.jpg",
+        IMREAD_GRAYSCALE
     );
 
     if (input.empty()) {

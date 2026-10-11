@@ -177,22 +177,22 @@ int main()
     double thresholdRatio;
 
     refGray = imread(
-        "C:/Users/sinbc/source/repos/W4_Corner/ref.bmp",
+        "ref.bmp",
         IMREAD_GRAYSCALE
     );
 
     tarGray = imread(
-        "C:/Users/sinbc/source/repos/W4_Corner/tar.bmp",
+        "tar.bmp",
         IMREAD_GRAYSCALE
     );
 
     refColor = imread(
-        "C:/Users/sinbc/source/repos/W4_Corner/ref.bmp",
+        "ref.bmp",
         IMREAD_COLOR
     );
 
     tarColor = imread(
-        "C:/Users/sinbc/source/repos/W4_Corner/tar.bmp",
+        "tar.bmp",
         IMREAD_COLOR
     );
 

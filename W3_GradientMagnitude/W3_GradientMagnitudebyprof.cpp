@@ -112,7 +112,7 @@ int main()
     Mat magnitudeImage;
 
     // 흑백영상으로 불러오기
-    input = imread("C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/LectureNote_03.bmp", IMREAD_GRAYSCALE);
+    input = imread("LectureNote_03.bmp", IMREAD_GRAYSCALE);
 
     // 이미지 로드 확인
     if (input.empty()) {

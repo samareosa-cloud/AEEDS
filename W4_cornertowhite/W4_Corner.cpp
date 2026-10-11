@@ -4,7 +4,7 @@ using namespace cv;
 using namespace std;
 
 int x, y, xx, yy;
-int width, height, index, mask_index;
+int width, height, idx, mask_index;
 double conv_x, conv_y;
 double gx, gy;
 double sum_Ix2, sum_Iy2, sum_IxIy;
@@ -59,9 +59,9 @@ void HarrisStep23(Mat input, Mat& result)
                 }
             }
 
-            index = y * width + x;
-            Ix[index] = conv_x;
-            Iy[index] = conv_y;
+            idx = y * width + x;
+            Ix[idx] = conv_x;
+            Iy[idx] = conv_y;
         }
     }
 
@@ -78,10 +78,10 @@ void HarrisStep23(Mat input, Mat& result)
             // 현재 픽셀 주변 3x3 영역
             for (yy = -1;yy <= 1;yy++) {
                 for (xx = -1;xx <= 1;xx++) {
-                    index = (y + yy) * width + (x + xx);
+                    idx = (y + yy) * width + (x + xx);
 
-                    gx = Ix[index];
-                    gy = Iy[index];
+                    gx = Ix[idx];
+                    gy = Iy[idx];
 
                     sum_Ix2 += gx * gx;
                     sum_Iy2 += gy * gy;
@@ -93,8 +93,8 @@ void HarrisStep23(Mat input, Mat& result)
             trace_M = sum_Ix2 + sum_Iy2;
             response = det_M - 0.04 * trace_M * trace_M;
 
-            index = y * width + x;
-            R[index] = response;
+            idx = y * width + x;
+            R[idx] = response;
 
             if (response > max_R)
                 max_R = response;
@@ -113,8 +113,8 @@ void HarrisStep23(Mat input, Mat& result)
     // R값에 따라 corner,flat,edge 구분
     for (y = 0;y < height;y++) {
         for (x = 0;x < width;x++) {
-            index = y * width + x;
-            response = R[index];
+            idx = y * width + x;
+            response = R[idx];
 
             if (response >= corner_threshold) {
                 // Corner: 흰색
@@ -138,7 +138,7 @@ void HarrisStep23(Mat input, Mat& result)
 
 int main()
 {
-    Mat input = imread("C:/Users/sinbc/source/repos/W4_Corner/checkerboard.jpg", IMREAD_COLOR);
+    Mat input = imread("checkerboard.jpg", IMREAD_COLOR);
 
     if (input.empty()) {
         cout << "Image open error!" << endl;

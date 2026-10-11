@@ -1,0 +1,19 @@
+{
+  // 코드 빨간 줄(IntelliSense) 용. 없는 경로는 무시되므로 후보를 모두 넣어둠
+  "configurations": [
+    {
+      "name": "Mac",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/opt/homebrew/include/opencv5",
+        "/opt/homebrew/include/opencv4",
+        "/usr/local/include/opencv5",
+        "/usr/local/include/opencv4"
+      ],
+      "compilerPath": "/usr/bin/clang++",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "macos-clang-arm64"
+    }
+  ],
+  "version": 4
+}

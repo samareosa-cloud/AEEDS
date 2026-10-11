@@ -1,4 +1,5 @@
-﻿#include <opencv2/opencv.hpp>
+﻿#define _CRT_SECURE_NO_WARNINGS  // VS 에서 fopen 경고(C4996) 끄기, 맥에서는 영향 없음
+#include <opencv2/opencv.hpp>
 #include <cmath>
 #include <cstdio>
 #include <vector>
@@ -244,7 +245,7 @@ static void saveBlockHistograms(
     int bin;
 
     file = NULL;
-    fopen_s(&file, fileName, "w");
+    file = fopen(fileName, "w");
 
     if (file == NULL) {
         std::printf(
@@ -307,7 +308,7 @@ static void saveFinalHistograms(
     int bin;
 
     file = NULL;
-    fopen_s(&file, fileName, "w");
+    file = fopen(fileName, "w");
 
     if (file == NULL) {
         std::printf(
@@ -352,7 +353,7 @@ static void saveDescriptorComparison(
     size_t i;
 
     file = NULL;
-    fopen_s(&file, fileName, "w");
+    file = fopen(fileName, "w");
 
     if (file == NULL) {
         std::printf(
@@ -422,13 +423,13 @@ int main()
 {
     // 이미지 경로
     const char* referencePath =
-        "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/LectureNote_03.bmp";
+        "LectureNote_03.bmp";
 
     const char* compare1Path =
-        "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/compare1.bmp";
+        "compare1.bmp";
 
     const char* compare2Path =
-        "C:/Users/sinbc/source/repos/W3_HOG/W3_HOG/compare2.bmp";
+        "compare2.bmp";
 
 
     // 과제 조건

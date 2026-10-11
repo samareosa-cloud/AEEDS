@@ -60,7 +60,7 @@ void imageResize(Mat input, float scale)
     imshow("Resize Result", result);
 
     // 결과 저장
-    imwrite("C:/Users/sinbc/resizeResult.bmp", result);
+    imwrite("resizeResult.bmp", result);
 
     waitKey(0);
 }
@@ -68,7 +68,7 @@ void imageResize(Mat input, float scale)
 int main()
 {
     // 컬러 이미지로 읽기
-    Mat img = imread("C:/Users/sinbc/test.jpg", IMREAD_COLOR);
+    Mat img = imread("test.jpg", IMREAD_COLOR);
 
     if (img.empty()) {
         cout << "Image load failed!" << endl;

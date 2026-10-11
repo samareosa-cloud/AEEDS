@@ -1,5 +1,4 @@
-﻿#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
+﻿#include <opencv2/opencv.hpp>
 #include <iostream>
 
 using namespace cv;
@@ -8,7 +7,7 @@ using namespace std;
 int main()
 {
 	// 이미지 읽기
-	Mat imgColor = imread("C:/Users/sinbc/test.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat imgColor = imread("test.jpg", IMREAD_COLOR);
 
 	Mat result = imgColor.clone();
 

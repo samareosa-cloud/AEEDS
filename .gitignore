@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# macOS / VS Code (clang++ 빌드 결과)
+.DS_Store
+build/
