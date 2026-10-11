@@ -151,6 +151,36 @@ AEEDS/
 
 ---
 
+## macOS (VS Code + OpenCV 5) 에서 실행하기
+
+모든 코드는 Windows(Visual Studio + OpenCV 3.4.5)와 macOS(VS Code + Homebrew OpenCV 5)에서 모두 빌드됩니다.
+
+1. `brew install opencv pkg-config`
+2. VS Code 에서 **`AEEDS` 폴더 자체**를 연다 (`.vscode` 설정을 읽어야 함)
+3. 실행할 `.cpp` 를 열고
+
+| 폴더 | 실행 방법 |
+|---|---|
+| `.cpp` 가 1개인 폴더 (W2~W4, `W5_VideoCapture`, `W6_*`) | **`Cmd + Shift + B`** |
+| `.cpp` 가 여러 개인 폴더 (`W5_HarrisVideo`, `W5_ORB_Image`, `W5_ORB_Video`) | `Cmd + Shift + P` → `Tasks: Run Task` → **폴더 전체 .cpp 빌드 & 실행** |
+
+- 결과 창 닫기: 창을 클릭한 뒤 아무 키 / 멈추면 터미널에서 `Ctrl + C`
+- 웹캠 권한: 시스템 설정 → 개인정보 보호 및 보안 → 카메라 → Visual Studio Code 허용 후 VS Code 재시작
+- 아이폰(연속성 카메라)이 잡히면 `VideoCapture capture(0)` 을 `capture(1)` 로
+
+| 폴더 | 내용 | 강의 |
+|---|---|---|
+| `W5_VideoCapture` | 웹캠 기본 구조 | LN5 |
+| `W5_HarrisVideo` | 웹캠 + Harris (`cornerDetector.cpp` 분리) + 평균 처리 속도 | LN5 |
+| `W5_ORB_Image` | ORB 매칭 (두 영상, 슬라이드 main + `utils.cpp`) | LN5 |
+| `W5_ORB_Video` | ORB 매칭 (참조 영상/첫 프레임 ↔ 웹캠) | LN5 |
+| `W6_OpticalFlow` | Farneback dense optical flow (슬라이드 코드) | LN6 |
+| `W6_LucasKanade` | Lucas-Kanade 직접 구현 (웹캠) | LN6 |
+
+> 웹캠 코드의 시간 측정은 Windows 전용 `QueryPerformanceCounter` 대신 `getTickCount()` 를 사용합니다. 시험 답안은 슬라이드 표기를 따르세요.
+
+---
+
 ## Notes
 
 Visual Studio에서 자동으로 생성되는 빌드 및 사용자 설정 파일은 `.gitignore`를 통해 Repository에서 제외합니다.
