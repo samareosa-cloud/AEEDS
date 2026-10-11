@@ -11,11 +11,46 @@
 //   (같은 폴더에 ref.jpg 가 있으면 그 사진을 참조 영상으로 바로 사용)
 // 실행: 이 폴더의 아무 파일이나 열고 Cmd+Shift+B (폴더의 .cpp 를 전부 같이 빌드)
 #include <opencv2/opencv.hpp>
+#include <thread>
+#include <chrono>
+#include <fstream>
 #include <cstdio>
 #include "utils.h"
 
 using namespace cv;
 using namespace std;
+
+// ── 맥용 카메라 열기 ────────────────────────────────────────────
+// 0번 카메라가 아이폰(연속성 카메라)이나 가상 카메라라서 검은 화면만 나올 수 있다.
+// 0~3번을 차례로 열어서 실제로 밝은 영상이 나오는 카메라를 사용한다.
+// (윈도우/수업 코드에서는 그냥 VideoCapture capture(0); 이면 된다)
+static bool openWorkingCamera(cv::VideoCapture& cap)
+{
+    for (int idx = 0; idx < 4; idx++) {
+        cap.open(idx);
+        if (!cap.isOpened()) continue;
+        cv::Mat f, g;
+        double best = 0;
+        for (int i = 0; i < 90; i++) {                     // 카메라 예열: 최대 약 3초
+            cap >> f;
+            if (f.empty()) { std::this_thread::sleep_for(std::chrono::milliseconds(30)); continue; }
+            cv::cvtColor(f, g, cv::COLOR_BGR2GRAY);
+            double m = cv::mean(g)[0];
+            if (m > best) best = m;
+            if (m > 15) {
+                std::printf("camera %d: OK (%d x %d, brightness %.0f)\n", idx, f.cols, f.rows, m);
+                return true;
+            }
+        }
+        std::printf("camera %d: black frames only (max brightness %.0f) -> skip\n", idx, best);
+        cap.release();
+    }
+    std::printf("밝은 영상이 나오는 카메라를 못 찾았어요.\n"
+                " - 시스템 설정 > 개인정보 보호 및 보안 > 카메라 에서 Visual Studio Code 허용 후 VS Code 재시작\n"
+                " - FaceTime / Photo Booth 에서 카메라가 나오는지 확인, 카메라 쓰는 다른 앱(Zoom 등) 종료\n");
+    return false;
+}
+// ────────────────────────────────────────────────────────────────
 
 float MIN_H_ERROR = 2.50f;   // RANSAC inlier 허용 오차(px). 키우면(예: 120) 거의 다 inlier → RANSAC 효과 비교해보기
 float DRATIO = 0.80f;        // NNDR ratio
@@ -33,7 +68,8 @@ static bool readFrame(VideoCapture& cap, Mat& frame)
 
 int main()
 {
-    VideoCapture capture(0);                 // 아이폰(연속성 카메라)이 잡히면 1
+    VideoCapture capture;                    // 수업 코드: VideoCapture capture(0);
+    openWorkingCamera(capture);              // 맥: 영상이 나오는 카메라 자동 선택
     if (!capture.isOpened()) { printf("Couldn't open the web camera...\n"); return -1; }
 
     Ptr<ORB> orb = ORB::create(1500, 1.2f, 4, 31, 0, 2, ORB::HARRIS_SCORE, 31);
@@ -43,7 +79,7 @@ int main()
     vector<KeyPoint> kptsRef;
 
     // ★ 참조 영상 준비: ref.jpg 가 있으면 사용
-    ref = imread("ref.jpg", IMREAD_GRAYSCALE);
+    if (std::ifstream("ref.jpg").good()) ref = imread("ref.jpg", IMREAD_GRAYSCALE);   // 파일이 있을 때만 읽기
     if (!ref.empty()) {
         resize(ref, ref, SZ);
         orb->detectAndCompute(ref, noArray(), kptsRef, descRef);
@@ -60,7 +96,7 @@ int main()
             // ★ 아직 참조 영상이 없으면: 웹캠 화면만 보여주고 SPACE 를 기다림
             Mat preview = frame.clone();
             bool dark = mean(gray)[0] < 15;              // 카메라 예열 중(검은 화면)
-            putText(preview, dark ? "camera warming up..." : "SPACE: capture reference",
+            putText(preview, dark ? "camera warming up... (black image)" : "SPACE: capture reference",
                     Point(10, 25), FONT_HERSHEY_SIMPLEX, 0.6, Scalar(0, 255, 255), 2);
             imshow("ORB video (left: reference / right: webcam)", preview);
             key = waitKey(30);
