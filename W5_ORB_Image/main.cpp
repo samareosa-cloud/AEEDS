@@ -1,7 +1,7 @@
 // W5-3. ORB feature matching (두 영상) — LN5 Feature Matching (3/7 ~ 6/7) 슬라이드 main
 // ORB = FAST corner + rotated BRIEF descriptor
 // 입력: images/1.bmp, images/2.bmp (W4 의 ref.bmp, tar.bmp 복사본)
-// 실행: Cmd+Shift+P → "Tasks: Run Task" → "폴더 전체 .cpp 빌드 & 실행" (utils.cpp 같이 빌드)
+// 실행: 이 폴더의 아무 파일이나 열고 Cmd+Shift+B (폴더의 .cpp 를 전부 같이 빌드)
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include "utils.h"

@@ -1,6 +1,6 @@
 // W5-4. ORB matching in videos — LN5 Practical Example
 // 참조 영상(ref.jpg, 없으면 첫 프레임)과 웹캠의 매 프레임을 ORB 로 매칭
-// 실행: Cmd+Shift+P → "Tasks: Run Task" → "폴더 전체 .cpp 빌드 & 실행" (utils.cpp 같이 빌드)
+// 실행: 이 폴더의 아무 파일이나 열고 Cmd+Shift+B (폴더의 .cpp 를 전부 같이 빌드)
 // 팁: 책 표지나 포스터를 첫 프레임에 비추고 시작 → 움직여도 선이 따라오는지 확인
 #include <opencv2/opencv.hpp>
 #include <cstdio>

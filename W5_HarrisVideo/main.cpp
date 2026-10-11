@@ -1,6 +1,6 @@
 // W5-2. 웹캠 프레임마다 Harris corner + 처리 속도(평균) 출력 — LN5 Extension to Videos (2/3, 3/3)
 // Harris 함수는 별도 파일 cornerDetector.cpp 에 구현 (슬라이드 요구사항)
-// 실행: 이 폴더의 파일을 연 상태에서 Cmd+Shift+P → "Tasks: Run Task" → "폴더 전체 .cpp 빌드 & 실행"
+// 실행: 이 폴더의 아무 파일이나 열고 Cmd+Shift+B (폴더의 .cpp 를 전부 같이 빌드)
 #include <opencv2/opencv.hpp>
 #include <cstdio>
 #include "cornerDetector.h"
