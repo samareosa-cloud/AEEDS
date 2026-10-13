@@ -201,22 +201,16 @@ static HogResult extractHogWithCell(
                 for (cx = 0; cx < block; cx += cell) {
 
                     // 현재 cell 내부의 픽셀 순회
-                    for (y = by + cy;
-                        y < by + cy + cell;
-                        ++y) {
+                    for (y = by + cy; y < by + cy + cell; ++y) {
 
-                        for (x = bx + cx;
-                            x < bx + cx + cell;
-                            ++x) {
+                        for (x = bx + cx; x < bx + cx + cell; ++x) {
 
                             bin = binImage[y * width + x];
 
                             // 해당 cell의 방향 bin에 크기 누적
-                            blockHist[cellIndex * nbins + bin]
-                                += magnitude[y * width + x];
+                            blockHist[cellIndex * nbins + bin] += magnitude[y * width + x];
                         }
                     }
-
                     ++cellIndex;
                 }
             }
@@ -231,12 +225,10 @@ static HogResult extractHogWithCell(
 
             inverseNorm = 1.0f / std::sqrt(sumSquares);
 
-
             // CSV에 block 번호 저장
             if (fp != NULL) {
                 std::fprintf(fp, "%d", blockIndex + 1);
             }
-
 
             // 4-3) 정규화된 값을 descriptor에 연결
             for (i = 0; i < blockDimension; ++i) {
@@ -273,8 +265,7 @@ static HogResult extractHogWithCell(
     sumSquares = eps;
 
     for (i = 0; i < nbins; ++i) {
-        sumSquares += result.finalHistogram[i]
-            * result.finalHistogram[i];
+        sumSquares += result.finalHistogram[i] * result.finalHistogram[i];
     }
 
     inverseNorm = 1.0f / std::sqrt(sumSquares);
@@ -363,13 +354,9 @@ static double meanDifference(
 
     for (i = 0; i < a.size(); ++i) {
 
-        difference
-            = static_cast<long double>(a[i])
-            - static_cast<long double>(b[i]);
-
+        difference = static_cast<long double>(a[i]) - static_cast<long double>(b[i]);
         sum += std::fabs(difference);
     }
-
     return static_cast<double>(sum / a.size());
 }
 
