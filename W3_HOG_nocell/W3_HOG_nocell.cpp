@@ -87,30 +87,19 @@ static HogResult extractHOG(
             convY = 0.0f;
 
             // 현재 픽셀 주변의 3×3 영역
-            for (yy = y - maskSize / 2;
-                yy <= y + maskSize / 2;
-                yy++) {
-
-                for (xx = x - maskSize / 2;
-                    xx <= x + maskSize / 2;
-                    xx++) {
-
+            for (yy = y - maskSize / 2; yy <= y + maskSize / 2; yy++) {
+                for (xx = x - maskSize / 2; xx <= x + maskSize / 2; xx++) {
                     // 이미지 범위 내부인지 확인
-                    if (yy >= 0 && yy < height
-                        && xx >= 0 && xx < width) {
-
+                    if (yy >= 0 && yy < height && xx >= 0 && xx < width) {
                         // 픽셀값을 0~1로 변환
                         pixel = input.at<uchar>(yy, xx) / 255.0f;
-
                         // x 방향 Gradient
                         convX += maskX[ (yy - (y - 1)) * maskSize + (xx - (x - 1)) ] * pixel;
-
                         // y 방향 Gradient
                         convY += maskY[ (yy - (y - 1)) * maskSize + (xx - (x - 1)) ] * pixel;
                     }
                 }
             }
-
 
             // Gradient Magnitude
             magnitudeValue = std::sqrt(convX * convX + convY * convY);
@@ -141,10 +130,8 @@ static HogResult extractHOG(
         }
     }
 
-
     // 2. Block 개수 계산
     blocksX = (width - blockSize) / interval + 1;
-
     blocksY = (height - blockSize) / interval + 1;
 
     result.blocksX = blocksX;
@@ -167,31 +154,23 @@ static HogResult extractHOG(
             // 현재 Block의 9-bin histogram
             vector<float> histogram(numberOfBins, 0.0f);
 
-
             // 4. 현재 16×16 Block 내부 픽셀 순회
             for (y = by; y < by + blockSize; y++) {
-
                 for (x = bx; x < bx + blockSize; x++) {
-
                     // 현재 픽셀의 방향 bin
                     bin = binImage[y * width + x];
-
                     // 해당 방향 bin에 Magnitude 누적
                     histogram[bin] += magnitude[y * width + x];
                 }
             }
 
-
             // 5. Block 단위 L2 normalization
             sumSquares = 0.0f;
 
             for (i = 0; i < numberOfBins; i++) {
-
                 sumSquares += histogram[i] * histogram[i];
             }
-
             norm = std::sqrt(sumSquares + epsilon);
-
 
             // 6. 정규화 및 전체 Descriptor 연결
             for (i = 0; i < numberOfBins; i++) {
@@ -204,7 +183,6 @@ static HogResult extractHOG(
                 // 보고서용 전체 9-bin에 누적
                 result.finalHistogram[i] += histogram[i];
             }
-
 
             // Block별 정규화 Histogram 저장
             result.blockHist.push_back(histogram);
@@ -225,7 +203,6 @@ static HogResult extractHOG(
     norm = std::sqrt(sumSquares + epsilon);
 
     for (i = 0; i < numberOfBins; i++) {
-
         result.finalHistogram[i] /= norm;
     }
 
