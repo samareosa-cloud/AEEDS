@@ -19,6 +19,7 @@ Advanced Electrical and Electronic Design Laboratory and Software Practice
 ## OpenCV Setup
 
 본 Repository의 프로젝트는 **OpenCV 3.4.5**를 사용합니다.
+** W9 부터는 macosversion code임 **
 
 ### 1. OpenCV 설치
 
