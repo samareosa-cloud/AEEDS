@@ -14,7 +14,7 @@ using namespace std;
 #define NBIN 9
 #define DIM (((WIN - BLOCK) / STRIDE + 1) * ((WIN - BLOCK) / STRIDE + 1) * NBIN)   // 225
 
-float cutoff = 0.87f;
+float cutoff = 0.872f;
 int nmsR = 16;
 int boxSize = 32;
 
@@ -43,7 +43,7 @@ void computeHOG(const Mat& img, float* desc)
             int b = (int)(theta / 20);
             if (b >= NBIN) b = NBIN - 1;
 
-            mag[y * WIN + x] = sqrt(gx * gx + gy * gy);
+            mag[y * WIN + x] = sqrt(sqrt(gx * gx + gy * gy));   // 크기에 루트: 강한 엣지 영향 줄이기
             bin[y * WIN + x] = b;
         }
     }
