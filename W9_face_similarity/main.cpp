@@ -16,7 +16,7 @@ using namespace std;
 
 float cutoff = 0.872f;
 int nmsR = 16;
-int boxSize = 32;
+int boxSize = 36;
 
 void computeHOG(const Mat& img, float* desc)
 {
