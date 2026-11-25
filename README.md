@@ -1,4 +1,4 @@
-# AEEDS
+# Opencv-cpp-labs
 
 Advanced Electrical and Electronic Design Laboratory and Software Practice
 
