@@ -11,7 +11,7 @@
 
 using namespace cv;
 
-#define DATA    "/Users/samareosa/Desktop/OpenCV_Project/AEEDS/ToyHospital"
+#define DATA    "./data"
 #define MAXOBJ  40
 
 char NAMES[MAXOBJ][32];     // DATA/names.txt 에서 읽음 (한 줄에 이름 하나)
