@@ -22,8 +22,8 @@ using namespace std;
 #define STEP 3                // 1단계 창 이동 간격
 
 // ---- 실험 설정 ----
-#define PUZZLE_DIR   "/Users/samareosa/Desktop/OpenCV_Project/AEEDS/ToyEdited"
-#define TEMPLATE_DIR "/Users/samareosa/Desktop/OpenCV_Project/AEEDS/ToyEdited/templates"
+#define PUZZLE_DIR   "./data"
+#define TEMPLATE_DIR "./data/templates"
 #define NPUZZLE      1
 #define BASE_WIDTH   800      // 아래 배율 범위를 정한 기준 장면 가로 크기 (px)
 #define SCALE_MIN    0.48f    // 가로 800px 장면 기준 배율 범위 (물체가 WIN 근처가 되게)
